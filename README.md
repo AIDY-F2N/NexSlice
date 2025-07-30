@@ -1,7 +1,7 @@
-# NexSlice: Towards an Open and Modular Network Slicing Testbed for 5G and Beyond
+# NexSlice: Towards an Open and Reproducible Network Slicing Testbed for 5G and Beyond
 
 <div align="center">
-    <img src="fig/1_IconsAll_Hori.png" alt="AIDY-F2N">
+    <img src="fig/aidyf2n.png" alt="AIDY-F2N">
 </div>
 
 ## Overview
@@ -35,7 +35,7 @@ Note that SSTs are only for numerical reference and does not reflect standard SS
 - [OAI 5G SA Core Deployment](#oai-5g-sa-core-deployment)
 - [5G RANs Deployments](#ueransim)
 - [Monitoring](#setup-prometheus-monitoring)
-- [Generate traffic using iPerf3](#generate-traffic-using-iperf3)
+- [Tests](#generate-traffic-using-iperf3)
 - [Collaboration](#beyond-the-basics-network-slicing-and-collaboration)
 
 
@@ -76,8 +76,24 @@ git clone https://github.com/AIDY-F2N/NexSlice.git
 
 
 # OAI 5G SA Core Deployment
+1. Open a terminal inside the folder "NexSlice" and deploy [setpodnet-scheduler](https://github.com/AIDY-F2N/setpodnet-scheduler) using the following command:
 
-Open a terminal inside the folder "NexSlice", and run the following commands to deploy the OAI core:
+```bash[language=bash]
+kubectl apply -f setpodnet-scheduler.yaml
+```
+
+2. Add latency and bandwidth constraints between pods: The User Plane Function (UPF) is a critical component in 5G networks, enabling low latency and high throughput. To optimize its deployment and ensure efficient communication with other core network functions, we need to specify constraints that reflect the UPF's requirements. For example, we have added constraints to the values file of the UPF pod (OAI-UERANSIM/OAI+UERANSIM/oai-5g-core-setpodnet/oai-upf/values.yaml) between UPF and SMF, and between UPF and AMF, using the following annotations:
+
+```yaml
+annotations:
+  communication-with: "oai-amf,oai-smf"
+  latency-oai-amf: "10"
+  bandwidth-oai-amf: "1"
+  latency-oai-smf: "10"
+  bandwidth-oai-smf: "1"
+```
+
+3. Open a terminal inside the folder "NexSlice", and run the following commands to deploy the OAI core:
 ```bash[language=bash]
 helm dependency update 5g_core/oai-5g-advance/
 helm install 5gc 5g_core/oai-5g-advance/ -n nexslice
@@ -91,7 +107,6 @@ kubectl get pods -n nexslice
 <div align="center">
     <img src="figures/5gc.png" alt="AIDY-F2N">
 </div>
-
 
 
 # Radio Access Networks (RANs)
