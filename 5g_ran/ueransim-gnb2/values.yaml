@@ -76,7 +76,7 @@ interfaces:
 mcc: '208'
 mnc: '95'
 sst: 1 #for UE 
-sd: "0x000002" #for UE
+#sd: "0x000002" #for UE
 #tac: '0001'
 
 hpa:
@@ -96,7 +96,7 @@ nodeSelector: {}
 tolerations: []
 
 ues:
-  enabled: true
+  enabled: false
   count: 100
   initialMSISDN: '0000000034'
   key: 0C0A34601D4F07677303652C0462535B
@@ -107,7 +107,7 @@ ues:
       apn: 'oai'
       slice:
         sst: 1
-        sd: "0x000002"
+        #sd: "0x000002"
       emergency: false
   resources:
     limits: {}

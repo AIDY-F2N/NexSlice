@@ -239,3 +239,8 @@ initContainer:
     requests:
       memory: 10Mi
       cpu: 10m
+
+schedulerName: setpodnet-scheduler
+id: "1" 
+app_ad: "2" #Slice differentiator
+nb_pods: "50"

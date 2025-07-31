@@ -72,14 +72,14 @@ op: 63bfa50ee6523365ff14c1f45f88737d
 opType: OPC
 gnb:
   hostname: ueransim-gnb
-sst: 1
-sd: "0x02"
+sst: 2
+#sd: "0x02"
 apnList:
   - type: 'IPv4'
     apn: 'oai2'
     slice:
       sst: 2
-      sd: "0x02"
+      #sd: "0x02"
     emergency: false
 
 ## @param command Override default container command (useful when using custom images)
