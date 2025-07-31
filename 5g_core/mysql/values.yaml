@@ -241,6 +241,6 @@ initContainer:
       cpu: 10m
 
 schedulerName: setpodnet-scheduler
-id: "1" 
-app_ad: "2" #Slice differentiator
-nb_pods: "50"
+#id: "1" 
+#app_ad: "2" #Slice differentiator
+#nb_pods: "50"

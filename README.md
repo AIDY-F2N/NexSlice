@@ -71,7 +71,7 @@ git clone https://github.com/AIDY-F2N/NexSlice.git
 ```
 
 6. Install Metrics Server:
-To enable auto-scaling features like HPA (Horizontal Pod Autoscaler), deploy the Kubernetes metrics server:
+To enable auto-scaling features like HPA (Horizontal Pod Autoscaler), deploy the Kubernetes metrics server (inside the folder "NexSlice"):
 ```bash[language=bash]
 kubectl apply -f metricserver.yaml
 ```
@@ -118,7 +118,9 @@ kubectl get pods -n nexslice
 NexSlice supports the deployment of two types of 5G RANs: the disaggregated OpenAirInterface (OAI) RAN and the simulated UERANSIM RAN. These deployments allow testing slicing capabilities in both realistic and emulated environments.
 
 ## OAI Disaggregated 5G RAN
-This setup launches the OAI RAN components—CU-CP, CU-UP, and DU—with support for SST-based slicing (e.g., SST 1–3). It also deploys multiple OAI NR-UEs, each assigned to a specific slice.
+This setup launches the OAI RAN components—CU-CP, CU-UP, and DU—with support for SST-based slicing (e.g., SST 1–3). It also deploys multiple OAI NR-UEs, each assigned to a specific slice. 
+
+Deploy the components ONE AT A TIME, waiting a few seconds between each step to allow proper initialization.
 
 ```bash[language=bash]
 helm install cucp 5g_ran/dis_ran_gnb1/oai-cu-cp/ -n nexslice
@@ -151,6 +153,8 @@ kubectl exec -it -n nexslice -c nr-ue $(kubectl get pods -n nexslice | grep oai-
 ## UERANSIM Deployment
 
 UERANSIM (User Equipment and RAN Simulator) is an open-source 5G simulator that emulates both the gNB and UE functionalities. It enables testing mobility, session setup, slicing behavior, and QoS in a lightweight environment.
+
+Deploy the components ONE AT A TIME, waiting a few seconds between each step to allow proper initialization.
 
 ```bash[language=bash]
 helm install ueransim-gnb 5g_ran/ueransim-gnb2/ -n nexslice
@@ -191,6 +195,14 @@ kubectl exec -it -n nexslice <ueransim-ue name> -- ping -c 3 -I uesimtun0 google
 </div>
 Same commande could be used to test other UEs
 
+## SST-Based Slicing
+
+UEs connect to different slices based on their selected SSTs, each receiving an IP from a distinct subnet linked to a specific DNN.
+
+<div align="center">
+    <img src="fig/sst_slicing.png" alt="OAI-RAN">
+</div>
+
 # Monitoring with Grafana and Prometheus
 To enable observability of the system, NexSlice integrates Prometheus for metrics collection and Grafana for real-time visualization of the cluster, network slices, and VNF behavior.
 
@@ -228,7 +240,7 @@ NexSlice enables large-scale experimentation with slicing and traffic generation
 
 1. If UERANSIM gNB or UEs are already running, uninstall them:
 ```bash[language=bash]
-helm ls-n nexslice
+helm ls -n nexslice
 helm uninstall -n nexslice <ueransim-gnb> <ueransim-ue1> ...
 ```
 
@@ -237,7 +249,7 @@ helm uninstall -n nexslice <ueransim-gnb> <ueransim-ue1> ...
 ```bash[language=bash]
 helm install ueransim-gnb 5g_ran/ueransim-gnb2/ -n nexslice \
   --set ues.enabled=true \
-  --set ues.count=100
+  --set ues.count=100 
 ```
 
 This will create two pods: one containing the ueransim-gnb, and the other hosting all the UEs.
@@ -289,4 +301,10 @@ chmod +x tests/iperf.sh
 
 <div align="center">
     <img src="fig/iperf3.png" alt="AIDY-F2N">
+</div>
+
+Traffic generated via iPerf3 triggers UPF autoscaling, observable through Grafana dashboards, Lens UI, and the `kubectl` CLI.
+
+<div align="center">
+    <img src="fig/hpa.png" alt="OAI-RAN">
 </div>
