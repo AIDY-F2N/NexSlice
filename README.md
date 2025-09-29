@@ -27,7 +27,7 @@ Slicing is implemented by mapping UEs to unique **S-NSSAI** identifiers (SST, SD
 
 ## Table of Contents
 
-- [Build a K8s cluster](#build-a-k8s-cluster)
+- [Build a K3s cluster](#build-a-k3s-cluster)
 - [Tools Setup](#tools-setup)
 - [OAI 5G SA Core Deployment](#oai-5g-sa-core-deployment)
 - [5G RANs Deployments](#ueransim)
@@ -35,8 +35,36 @@ Slicing is implemented by mapping UEs to unique **S-NSSAI** identifiers (SST, SD
 - [Tests](#generate-traffic-using-iperf3)
 
 
-# Build a K8S cluster
-We assume that a Kubernetes cluster is already running using this repository: https://github.com/AIDY-F2N/k8s-cluster-setup-ubuntu24.git
+# Build a K3S cluster
+K3S is a lightweight, certified Kubernetes distribution designed for production workloads in resource-constrained environments.  
+It packages all the essential Kubernetes components into a single binary, reduces memory footprint, and simplifies cluster setup.  
+K3S is ideal for edge computing, IoT, labs, or single-node clusters, while remaining fully compatible with standard Kubernetes APIs and tools. You can find more in : https://docs.k3s.io/
+
+
+## Requirements
+- Ubuntu 24.04 on a machine or VM
+- Sudo privileges
+- Disable UFW (Uncomplicated Firewall)
+
+1. **Install K3S on the server:**
+```bash
+curl -sfL https://get.k3s.io | sh -
+```
+
+You can create a K3S cluster using just a single server node, or optionally add agent nodes for distributing workloads.
+
+
+2. **Add agent nodes:**
+```bash
+curl -sfL https://get.k3s.io | K3S_URL=https://<SERVER_IP>:6443 K3S_TOKEN=<NODE_TOKEN> sh -
+```
+- <MASTER_IP>: IP address of the server node ip a
+- <NODE_TOKEN>: Retrieve from server with sudo cat /var/lib/rancher/k3s/server/node-token
+
+3. **Check all nodes in the cluster:**
+```bash
+sudo kubectl get nodes
+```
 
 # Tools Setup
 
@@ -78,26 +106,7 @@ kubectl apply -f metricserver.yaml
 
 
 # OAI 5G SA Core Deployment
-1. Open a terminal inside the folder "NexSlice" and deploy [setpodnet-scheduler](https://github.com/AIDY-F2N/setpodnet-scheduler) using the following command:
-
-```bash[language=bash]
-kubectl apply -f setpodnet-scheduler.yaml
-```
-
-2. (Optional) To optimize performance—especially for latency-sensitive components like the User Plane Function (UPF)—you can specify inter-VNF constraints directly in their Helm values file.
-Example: In the values.yaml file of the UPF (located in 5g_core/oai-5g-advance/oai-upf/), add the following annotations:
-
-```yaml
-annotations:
-  communication-with: "oai-amf,oai-smf"
-  latency-oai-amf: "10"
-  bandwidth-oai-amf: "1"
-  latency-oai-smf: "10"
-  bandwidth-oai-smf: "1"
-```
-These annotations inform the scheduler about preferred communication paths and required QoS between UPF, AMF, and SMF.
-
-3. Run the following commands to deploy the 5g core:
+1. Open a terminal inside the folder "NexSlice" and run the following commands to deploy the 5g core:
 ```bash[language=bash]
 helm dependency update 5g_core/oai-5g-advance/
 helm install 5gc 5g_core/oai-5g-advance/ -n nexslice
@@ -200,7 +209,7 @@ Same commande could be used to test other UEs
 UEs connect to different slices based on their selected SSTs, each receiving an IP from a distinct subnet linked to a specific DNN.
 
 <div align="center">
-    <img src="fig/sst_slicing.png" alt="OAI-RAN">
+    <img src="fig/slicing.png" alt="OAI-RAN">
 </div>
 
 # Monitoring with Grafana and Prometheus
