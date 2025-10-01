@@ -33,6 +33,7 @@ Slicing is implemented by mapping UEs to unique **S-NSSAI** identifiers (SST, SD
 - [5G RANs Deployments](#ueransim)
 - [Monitoring](#setup-prometheus-monitoring)
 - [Tests](#generate-traffic-using-iperf3)
+- [Clean the cluster](#clean-the-cluster)
 
 
 # Build a K3S cluster
@@ -42,9 +43,12 @@ K3S is ideal for edge computing, IoT, labs, or single-node clusters, while remai
 
 
 ## Requirements
-- Ubuntu 24.04 on a machine or VM
-- Sudo privileges
-- Disable UFW (Uncomplicated Firewall)
+- A Linux distribution (tested on **Ubuntu 24.04**) running on a physical machine or VM  
+- **Sudo privileges**  
+- **UFW (Uncomplicated Firewall)** must be disabled:  
+```bash
+sudo ufw disable
+```
 
 1. **Install K3S on the server:**
 ```bash
@@ -63,7 +67,7 @@ curl -sfL https://get.k3s.io | K3S_URL=https://<SERVER_IP>:6443 K3S_TOKEN=<NODE_
 
 3. **Check all nodes in the cluster:**
 ```bash
-sudo kubectl get nodes
+sudo k3s kubectl get nodes
 ```
 
 # Tools Setup
@@ -84,13 +88,13 @@ Helm Spray is a Helm plugin that simplifies the deployment of Kubernetes applica
 ```bash[language=bash]
 git clone https://github.com/k8snetworkplumbingwg/multus-cni.git
 ```
-  - Apply a daemonset which installs Multus using kubectl. From the root directory of the clone, apply the daemonset YAML file:
+  - Apply a daemonset which installs Multus using kubectl. Apply the daemonset YAML file:
     ```bash[language=bash]
-    kubectl apply -f multus-cni/deployments/multus-daemonset-thick.yml
+    sudo k3s kubectl apply -f multus-cni/deployments/multus-daemonset-thick.yml
     ```
 4. Create nexslice namespace using the below command: 
     ```bash[language=bash]
-    kubectl create ns nexslice
+    sudo k3s kubectl create namespace nexslice
     ```
 
 5. Clone this repository:
@@ -101,7 +105,7 @@ git clone https://github.com/AIDY-F2N/NexSlice.git
 6. Install Metrics Server:
 To enable auto-scaling features like HPA (Horizontal Pod Autoscaler), deploy the Kubernetes metrics server (inside the folder "NexSlice"):
 ```bash[language=bash]
-kubectl apply -f metricserver.yaml
+sudo k3s kubectl apply -f metricserver.yaml
 ```
 
 
@@ -115,7 +119,7 @@ These commands update chart dependencies and deploy the full OAI 5G SA Core into
 
 To confirm the deployment status of the core components:
 ```bash[language=bash]
-kubectl get pods -n nexslice 
+sudo k3s kubectl get pods -n nexslice 
 ```
 
 <div align="center">
@@ -139,20 +143,20 @@ helm install du 5g_ran/dis_ran_gnb1/oai-du -n nexslice
 helm install nrue1 5g_ran/oai-nr-ue1 -n nexslice 
 helm install nrue2 5g_ran/oai-nr-ue2 -n nexslice
 
-kubectl get pods -n nexslice | grep -E 'cu-cp|cu-up|du|nr-ue'
+sudo k3s kubectl get pods -n nexslice | grep -E 'cu-cp|cu-up|du|nr-ue'
 ```
 
 You can verify that NR-UEs received an IP address using:
 
 ```bash[language=bash]
-kubectl exec -it -n nexslice -c nr-ue $(kubectl get pods -n nexslice | grep oai-nr-ue | awk '{print $1}') -- ifconfig oaitun_ue1 |grep -E '(^|\s)inet($|\s)' | awk {'print $2'}
-kubectl exec -it -n nexslice -c nr-ue $(kubectl get pods -n nexslice | grep oai-nr-ue2 | awk '{print $1}') -- ifconfig oaitun_ue1 |grep -E '(^|\s)inet($|\s)' | awk {'print $2'}
+sudo k3s kubectl exec -it -n nexslice -c nr-ue $(sudo k3s kubectl get pods -n nexslice | grep oai-nr-ue | awk '{print $1}') -- ifconfig oaitun_ue1 |grep -E '(^|\s)inet($|\s)' | awk {'print $2'}
+sudo k3s kubectl exec -it -n nexslice -c nr-ue $(sudo k3s kubectl get pods -n nexslice | grep oai-nr-ue2 | awk '{print $1}') -- ifconfig oaitun_ue1 |grep -E '(^|\s)inet($|\s)' | awk {'print $2'}
 ```
 To confirm successful connection to the Internet:
 
 ```bash[language=bash]
-kubectl exec -it -n nexslice -c nr-ue $(kubectl get pods -n nexslice | grep oai-nr-ue | awk '{print $1}') -- ping -I oaitun_ue1 -c4 google.fr
-kubectl exec -it -n nexslice -c nr-ue $(kubectl get pods -n nexslice | grep oai-nr-ue2 | awk '{print $1}') -- ping -I oaitun_ue1 -c4 google.fr
+sudo k3s kubectl exec -it -n nexslice -c nr-ue $(sudo k3s kubectl get pods -n nexslice | grep oai-nr-ue | awk '{print $1}') -- ping -I oaitun_ue1 -c4 google.fr
+sudo k3s kubectl exec -it -n nexslice -c nr-ue $(sudo k3s kubectl get pods -n nexslice | grep oai-nr-ue2 | awk '{print $1}') -- ping -I oaitun_ue1 -c4 google.fr
 ```
 
 <div align="center">
@@ -176,8 +180,8 @@ helm install ueransim-ue3 5g_ran/ueransim-ue3/ -n nexslice
 Check running pods:
 
 ```bash[language=bash]
-kubectl get pods -n nexslice | grep ueransim
-kubectl logs -n nexslice <ueransim-gnb name> 
+sudo k3s kubectl get pods -n nexslice | grep ueransim
+sudo k3s kubectl logs -n nexslice <ueransim-gnb name> 
 ```
 <div align="center">
     <img src="fig/ueransim.png" alt="OAI-RAN">
@@ -186,7 +190,7 @@ kubectl logs -n nexslice <ueransim-gnb name>
 View logs:
 
 ```bash[language=bash]
-kubectl logs -n nexslice <ueransim-ue name>
+sudo k3s kubectl logs -n nexslice <ueransim-ue name>
 ```
 <div align="center">
     <img src="fig/ueransim2.png" alt="OAI-RAN">
@@ -196,7 +200,7 @@ Same commande could be used to test other UEs
 Test data session by pinging from a UE:
 
 ```bash[language=bash]
-kubectl exec -it -n nexslice <ueransim-ue name> -- ping -c 3 -I uesimtun0 google.com
+sudo k3s kubectl exec -it -n nexslice <ueransim-ue name> -- ping -c 3 -I uesimtun0 google.com
 ```
 
 <div align="center">
@@ -216,15 +220,15 @@ UEs connect to different slices based on their selected SSTs, each receiving an 
 To enable observability of the system, NexSlice integrates Prometheus for metrics collection and Grafana for real-time visualization of the cluster, network slices, and VNF behavior.
 
 ```bash[language=bash]
-kubectl create ns monitoring
+sudo k3s kubectl create ns monitoring
 helm install monitoring monitoring/ -n monitoring
 ```
 
 Now you should be able to access the Grafana dashboard. You can use port forwarding using the following command (Replace <grafana-pod-name> by the name of your grafana pod )
 
 ```bash[language=bash]
-kubectl get pods -n monitoring
-kubectl port-forward -n monitoring <grafana-pod-name> 3000 &
+sudo k3s kubectl get pods -n monitoring
+sudo k3s kubectl port-forward -n monitoring <grafana-pod-name> 3000 &
 ```
 
 <div align="center">
@@ -263,7 +267,7 @@ helm install ueransim-gnb 5g_ran/ueransim-gnb2/ -n nexslice \
 
 This will create two pods: one containing the ueransim-gnb, and the other hosting all the UEs.
 ```bash[language=bash]
-kubectl get pods -n nexslice | grep ueransim
+sudo k3s kubectl get pods -n nexslice | grep ueransim
 ```
 
 <div align="center">
@@ -273,9 +277,9 @@ kubectl get pods -n nexslice | grep ueransim
 You can verify the deployment either by checking the logs of ueransim-gnb or by accessing the UE pod to view the interfaces from uesimtun0 to uesimtun99. Each should have an IP address and be able to ping:
 
 ```bash[language=bash]
-kubectl logs -n nexslice <ueransim-gnb-pod-name>
-kubectl exec -n nexslice <ueransim-ues-pod-name> -- ip a
-kubectl exec -n nexslice <ueransim-ues-pod-name> -- ping -c 4 -I uesimtun0 google.com
+sudo k3s kubectl logs -n nexslice <ueransim-gnb-pod-name>
+sudo k3s kubectl exec -n nexslice <ueransim-ues-pod-name> -- ip a
+sudo k3s kubectl exec -n nexslice <ueransim-ues-pod-name> -- ping -c 4 -I uesimtun0 google.com
 ```
 
 <div align="center">
@@ -296,7 +300,7 @@ All UEs will attempt to ping a target (e.g., google.com) from their respective v
 
 1. Deploy iperf3 server using the following command : 
 ```bash[language=bash]
-kubectl run iperf3 --image=maitaba/iperf3:latest
+sudo k3s kubectl run iperf3 --image=maitaba/iperf3:latest
 ```
 
 iperf3 pod acts as server which is listening to 100 ports from 5201 to 5301. By default, the iPerf3 server will listen to all active interfaces of the host for new connections. 
@@ -317,3 +321,27 @@ Traffic generated via iPerf3 triggers UPF autoscaling, observable through Grafan
 <div align="center">
     <img src="fig/hpa.png" alt="OAI-RAN">
 </div>
+
+## Clean the cluster
+To remove resources (pods, deployments, Helm charts, etc.), you can proceed as follows:
+1. Delete Helm charts
+```bash[language=bash]
+helm ls -A   # List all Helm charts across namespaces
+helm uninstall <chartName> -n <namespace>
+```
+This applies to all deployed charts such as: 5gc, cuup, cucp, du, monitoring, nrue1, nrue2, ueransim-gnb, ueransim-ue1, ueransim-ue2, ueransim-ue3
+
+2. Delete resources applied with kubectl
+```bash[language=bash]
+sudo k3s kubectl delete -f <file> # Examples: metricserver.yaml, multus-cni/deployments/multus-daemonset-thick.yml
+```
+
+3. Remove a k3s agent (worker) node
+```bash[language=bash]
+sudo /usr/local/bin/k3s-agent-uninstall.sh
+```
+
+4. Remove the k3s server (control-plane) node
+```bash[language=bash]
+sudo /usr/local/bin/k3s-uninstall.sh
+```
