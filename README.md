@@ -12,18 +12,11 @@ This repository contains Helm charts and deployment scripts for:
 - OAI 5G SA Core
 - OAI disaggregated CU/DU RAN with NR-UEs
 - UERANSIM simulator for gNBs and UEs
-- Slice-aware orchestration using **SetpodNet**
 - Monitoring via **Prometheus**, **Grafana**, and **Lens**
 
 Slicing is implemented by mapping UEs to unique **S-NSSAI** identifiers (SST, SD), with dedicated SMF/UPF instances per slice and shared AMF/NSSF/AUSF/UDM/UDR. This setup enables reproducible experiments across isolated, service-tailored network slices (eMBB, URLLC, etc.).
 
 ![Slicing](fig/NexSlice.png)
-
-
-## Contributors
-
-- Yasser BRAHMI, abdenour-yasser.brahmi@telecom-sudparis.eu
-- Massinissa AIT ABA, massinissa.ait-aba@davidson.fr
 
 ## Table of Contents
 
@@ -31,7 +24,7 @@ Slicing is implemented by mapping UEs to unique **S-NSSAI** identifiers (SST, SD
 - [Tools Setup](#tools-setup)
 - [OAI 5G SA Core Deployment](#oai-5g-sa-core-deployment)
 - [5G RANs Deployments](#ueransim)
-- [Monitoring](#setup-prometheus-monitoring)
+- [Monitoring](#monitoring)
 - [Tests](#generate-traffic-using-iperf3)
 - [Clean the cluster](#clean-the-cluster)
 
@@ -55,6 +48,15 @@ sudo ufw disable
 curl -sfL https://get.k3s.io | sh -
 ```
 
+Configure k3s:
+
+```bash
+mkdir -p ~/.kube
+sudo cp /etc/rancher/k3s/k3s.yaml ~/.kube/config
+sudo chown $(id -u):$(id -g) ~/.kube/config
+```
+
+
 You can create a K3S cluster using just a single server node, or optionally add agent nodes for distributing workloads.
 
 
@@ -62,8 +64,8 @@ You can create a K3S cluster using just a single server node, or optionally add 
 ```bash
 curl -sfL https://get.k3s.io | K3S_URL=https://<SERVER_IP>:6443 K3S_TOKEN=<NODE_TOKEN> sh -
 ```
-- <MASTER_IP>: IP address of the server node ip a
-- <NODE_TOKEN>: Retrieve from server with sudo cat /var/lib/rancher/k3s/server/node-token
+- <MASTER_IP>: IP address of the server node <ip a>
+- <NODE_TOKEN>: Retrieve from server with <sudo cat /var/lib/rancher/k3s/server/node-token>
 
 3. **Check all nodes in the cluster:**
 ```bash
@@ -99,7 +101,7 @@ git clone https://github.com/k8snetworkplumbingwg/multus-cni.git
 
 5. Clone this repository:
 ```bash[language=bash]
-git clone https://github.com/AIDY-F2N/NexSlice.git
+git clone -b k3s https://github.com/AIDY-F2N/NexSlice.git
 ```
 
 6. Install Metrics Server:
@@ -216,7 +218,7 @@ UEs connect to different slices based on their selected SSTs, each receiving an 
     <img src="fig/slicing.png" alt="OAI-RAN">
 </div>
 
-# Monitoring with Grafana and Prometheus
+# Monitoring
 To enable observability of the system, NexSlice integrates Prometheus for metrics collection and Grafana for real-time visualization of the cluster, network slices, and VNF behavior.
 
 ```bash[language=bash]
@@ -246,6 +248,19 @@ Password: prom-operator
 
 <div align="center">
     <img src="fig/grafana.png" alt="OAI-RAN">
+</div>
+
+## Lens UI
+Once your cluster is ready, use Lens — a powerful Kubernetes IDE — to manage your cluster visually instead of using `kubectl` in the CLI.
+
+1. **Download Lens**: [https://k8slens.dev/download](https://k8slens.dev/download)  
+2. **Launch the application.**  
+3. Lens will automatically detect your kubeconfig file (`~/.kube/config`).  
+4. Click **“Add Cluster”** and select your cluster from the list.  
+5. You're ready to view **workloads, logs, nodes, CPU/memory usage**, and much more — all in a visual interface.
+
+<div align="center">
+    <img src="fig/ui.png" alt="Lens">
 </div>
 
 # Advanced Tests: Scaling UEs and Measuring Throughput
@@ -306,10 +321,10 @@ sudo k3s kubectl run iperf3 --image=maitaba/iperf3:latest
 iperf3 pod acts as server which is listening to 100 ports from 5201 to 5301. By default, the iPerf3 server will listen to all active interfaces of the host for new connections. 
 
 
-2.  Run the following script, UEs will act as clients to connect with the server (at most 100) and connect to an iperf3 server during &lt;seconds&gt; seconds.   
+2.  Run the following script, UEs will act as clients to connect with the server (at most 100) and connect to an iperf3 server during 60 seconds.
 ```bash[language=bash]
 chmod +x tests/iperf.sh
-./tests/iperf.sh <secondes> #60 seconds by default 
+./tests/iperf.sh 
 ```
 
 <div align="center">
@@ -317,12 +332,14 @@ chmod +x tests/iperf.sh
 </div>
 
 Traffic generated via iPerf3 triggers UPF autoscaling, observable through Grafana dashboards, Lens UI, and the `kubectl` CLI.
-
+```bash[language=bash]
+sudo k3s kubectl get hpa -A
+```
 <div align="center">
     <img src="fig/hpa.png" alt="OAI-RAN">
 </div>
 
-## Clean the cluster
+# Clean the cluster
 To remove resources (pods, deployments, Helm charts, etc.), you can proceed as follows:
 1. Delete Helm charts
 ```bash[language=bash]
