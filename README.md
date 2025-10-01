@@ -36,9 +36,10 @@ K3S is ideal for edge computing, IoT, labs, or single-node clusters, while remai
 
 
 ## Requirements
-- A Linux distribution (tested on **Ubuntu 24.04**) running on a physical machine or VM  
+- Architecture: **AMD64 (x86_64)**
+- A Linux distribution (tested on **Ubuntu 24.04**) running on a physical machine or virtual machine.
 - **Sudo privileges**  
-- **UFW (Uncomplicated Firewall)** must be disabled:  
+- **UFW (Uncomplicated Firewall)** must be disabled on k3s server and agents:
 ```bash
 sudo ufw disable
 ```
@@ -60,7 +61,9 @@ sudo chown $(id -u):$(id -g) ~/.kube/config
 You can create a K3S cluster using just a single server node, or optionally add agent nodes for distributing workloads.
 
 
-2. **Add agent nodes:**
+2. **Add agent nodes:** 
+**NOTE**: On the agent machines, disable UFW and join the agent to the K3s cluster. All remaining commands from this repository should be executed on the server machine.
+
 ```bash
 curl -sfL https://get.k3s.io | K3S_URL=https://<SERVER_IP>:6443 K3S_TOKEN=<NODE_TOKEN> sh -
 ```
@@ -74,7 +77,7 @@ sudo k3s kubectl get nodes
 
 # Tools Setup
 
-1.  Install the Helm CLI usnig this link: https://helm.sh/docs/intro/install/
+1.  Install the Helm CLI using this link: https://helm.sh/docs/intro/install/
 
 Helm CLI (Command-Line Interface) is a command-line tool used for managing applications on Kubernetes clusters. It is part of the Helm package manager, which helps you package, deploy, and manage applications as reusable units called Helm charts.
 
@@ -102,10 +105,11 @@ git clone https://github.com/k8snetworkplumbingwg/multus-cni.git
 5. Clone this repository:
 ```bash[language=bash]
 git clone -b k3s https://github.com/AIDY-F2N/NexSlice.git
+cd NexSlice/
 ```
 
 6. Install Metrics Server:
-To enable auto-scaling features like HPA (Horizontal Pod Autoscaler), deploy the Kubernetes metrics server (inside the folder "NexSlice"):
+To enable auto-scaling features like HPA (Horizontal Pod Autoscaler), deploy the Kubernetes metrics server:
 ```bash[language=bash]
 sudo k3s kubectl apply -f metricserver.yaml
 ```
@@ -197,7 +201,7 @@ sudo k3s kubectl logs -n nexslice <ueransim-ue name>
 <div align="center">
     <img src="fig/ueransim2.png" alt="OAI-RAN">
 </div>
-Same commande could be used to test other UEs
+The same command can be used to test other UEs
 
 Test data session by pinging from a UE:
 
@@ -208,7 +212,7 @@ sudo k3s kubectl exec -it -n nexslice <ueransim-ue name> -- ping -c 3 -I uesimtu
 <div align="center">
     <img src="fig/ueransim3.png" alt="OAI-RAN">
 </div>
-Same commande could be used to test other UEs
+The same command can be used to test other UEs
 
 ## SST-Based Slicing
 
@@ -240,7 +244,7 @@ sudo k3s kubectl port-forward -n monitoring <grafana-pod-name> 3000 &
 
 Make sure the port is allowed in the firewall to be accessed from your workstation.
 
-You will be able to access Grafana a from http://localhost:3000
+You will be able to access Grafana from http://localhost:3000
 ```bash[language=bash]
 User: admin
 Password: prom-operator
