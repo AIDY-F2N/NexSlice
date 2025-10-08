@@ -3,6 +3,7 @@
 <div align="center">
     <img src="fig/aidyf2n.png" alt="AIDY-F2N">
 </div>
+
 ## Citation
 This work has been accepted as a demo paper at The 27th International Conference on Modeling, Analysis and Simulation of Wireless and Mobile Systems (MSWiM 2025), Barcelona, Spain, October 27th – 31st, 2025
 
