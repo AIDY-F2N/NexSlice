@@ -67,13 +67,15 @@ You can create a K3S cluster using just a single server node, or optionally add 
 ```bash
 curl -sfL https://get.k3s.io | K3S_URL=https://<SERVER_IP>:6443 K3S_TOKEN=<NODE_TOKEN> sh -
 ```
-- <MASTER_IP>: IP address of the server node <ip a>
-- <NODE_TOKEN>: Retrieve from server with <sudo cat /var/lib/rancher/k3s/server/node-token>
+- <MASTER_IP>: IP address of the server node using "ip a"
+- <NODE_TOKEN>: Retrieve from server with "sudo cat /var/lib/rancher/k3s/server/node-token"
 
 3. **Check all nodes in the cluster:**
 ```bash
 sudo k3s kubectl get nodes
 ```
+
+**Note**: Several screenshots were taken from the **main** branch of NexSlice, which uses standard kubectl commands. When running NexSlice on **k3s**, make sure to prepend "sudo k3s" to each kubectl command (unless it already works without it on your setup).
 
 # Tools Setup
 
@@ -253,6 +255,8 @@ Password: prom-operator
 <div align="center">
     <img src="fig/grafana.png" alt="OAI-RAN">
 </div>
+
+Go to Dashboards and click on it — you’ll find multiple dashboards covering the entire cluster, nodes, pods, etc. When selecting a dashboard, make sure to choose the correct namespace if applicable (**not default** — use NexSlice instead), and then select the pod whose resources you want to monitor.
 
 ## Lens UI
 Once your cluster is ready, use Lens — a powerful Kubernetes IDE — to manage your cluster visually instead of using `kubectl` in the CLI.
