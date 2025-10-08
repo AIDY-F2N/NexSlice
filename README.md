@@ -13,6 +13,8 @@ If you use NexSlice in your research or experiments, please cite our paper once 
 
 **NexSlice** is a modular, open-source testbed for 5G core network slicing built natively on Kubernetes. It supports scalable slice instantiation using open-source components such as **OpenAirInterface (OAI)** and **UERANSIM**, and integrates both monolithic and disaggregated RANs.
 
+
+
 This repository contains Helm charts and deployment scripts for:
 - OAI 5G SA Core
 - OAI disaggregated CU/DU RAN with NR-UEs
@@ -375,3 +377,6 @@ sudo /usr/local/bin/k3s-agent-uninstall.sh
 ```bash[language=bash]
 sudo /usr/local/bin/k3s-uninstall.sh
 ```
+
+# Contact
+- Yasser BRAHMI, abdenour-yasser.brahmi@telecom-sudparis.eu
