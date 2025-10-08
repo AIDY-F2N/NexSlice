@@ -4,9 +4,20 @@
     <img src="fig/aidyf2n.png" alt="AIDY-F2N">
 </div>
 
+## Citation
+This work has been accepted as a demo paper at The 27th International Conference on Modeling, Analysis and Simulation of Wireless and Mobile Systems (MSWiM 2025), Barcelona, Spain, October 27th – 31st, 2025
+
+If you use NexSlice in your research or experiments, please cite our paper once it is published in IEEE (The official DOI and link will be added here upon publication).
+
 ## Overview
 
 **NexSlice** is a modular, open-source testbed for 5G core network slicing built natively on Kubernetes. It supports scalable slice instantiation using open-source components such as **OpenAirInterface (OAI)** and **UERANSIM**, and integrates both monolithic and disaggregated RANs.
+
+A demonstration video is available here: : https://www.youtube.com/watch?v=HbOCkVIp-9k
+
+For lightweight environments, the k3s branch provides a version of NexSlice running on k3s (a lightweight Kubernetes distribution).
+
+A Docker Compose version is also available here: https://github.com/AIDY-F2N/NexSlice-Docker-Compose
 
 This repository contains Helm charts and deployment scripts for:
 - OAI 5G SA Core
@@ -19,11 +30,12 @@ Slicing is implemented by mapping UEs to unique **S-NSSAI** identifiers (SST, SD
 
 ![Slicing](fig/NexSlice.png)
 
+| Slice | Color   | SST | SD | UE IP Subnet  | 
+|-------|---------|-----|----|---------------|
+| 1     | Blue    | 1   | x  | 12.1.1.0/24   |
+| 2     | Red     | 2   | x  | 12.1.2.0/24   |
+| 3     | Yellow  | 3   | x  | 12.1.3.0/24   |
 
-## Contributors
-
-- Yasser BRAHMI, abdenour-yasser.brahmi@telecom-sudparis.eu
-- Massinissa AIT ABA, massinissa.ait-aba@davidson.fr
 
 ## Table of Contents
 
@@ -33,7 +45,7 @@ Slicing is implemented by mapping UEs to unique **S-NSSAI** identifiers (SST, SD
 - [5G RANs Deployments](#ueransim)
 - [Monitoring](#setup-prometheus-monitoring)
 - [Tests](#generate-traffic-using-iperf3)
-
+- [Clean the cluster](#clean-the-cluster)
 
 # Build a K8S cluster
 We assume that a Kubernetes cluster is already running using this repository: https://github.com/AIDY-F2N/k8s-cluster-setup-ubuntu24.git
@@ -200,7 +212,7 @@ Same commande could be used to test other UEs
 UEs connect to different slices based on their selected SSTs, each receiving an IP from a distinct subnet linked to a specific DNN.
 
 <div align="center">
-    <img src="fig/sst_slicing.png" alt="OAI-RAN">
+    <img src="fig/sst-slicing.png" alt="OAI-RAN">
 </div>
 
 # Monitoring with Grafana and Prometheus
@@ -234,6 +246,8 @@ Password: prom-operator
 <div align="center">
     <img src="fig/grafana.png" alt="OAI-RAN">
 </div>
+
+Go to Dashboards and click on it — you’ll find multiple dashboards covering the entire cluster, nodes, pods, etc. When selecting a dashboard, make sure to choose the correct namespace if applicable (not default — use NexSlice instead), and then select the pod whose resources you want to monitor.
 
 # Advanced Tests: Scaling UEs and Measuring Throughput
 NexSlice enables large-scale experimentation with slicing and traffic generation using UERANSIM. Below we describe how to deploy and test 100 simultaneous UEs.
@@ -308,3 +322,44 @@ Traffic generated via iPerf3 triggers UPF autoscaling, observable through Grafan
 <div align="center">
     <img src="fig/hpa.png" alt="OAI-RAN">
 </div>
+
+# Clean the cluster
+To remove resources (pods, deployments, Helm charts, etc.), you can proceed as follows:
+1. Delete Helm charts
+```bash[language=bash]
+helm ls -A   # List all Helm charts across namespaces
+helm uninstall <chartName> -n <namespace>
+```
+This applies to all deployed charts such as: 5gc, cuup, cucp, du, monitoring, nrue1, nrue2, ueransim-gnb, ueransim-ue1, ueransim-ue2, ueransim-ue3
+
+2. Delete resources applied with kubectl
+```bash[language=bash]
+kubectl delete -f <file> # Examples: metricserver.yaml, multus-cni/deployments/multus-daemonset-thick.yml
+```
+
+3. Delete the whole namespace
+```bash[language=bash]
+kubectl delete ns <namespace> # Examples: nexslice, monitoring
+```
+
+4. Reset and clean the cluster
+- On the master node:
+
+```bash[language=bash]
+sudo kubeadm reset -f
+sudo rm -rf /etc/cni/net.d /var/lib/cni/ /var/lib/kubelet/* /etc/kubernetes/ ~/.kube
+sudo ip link delete cni0
+sudo ip link delete flannel.1
+sudo systemctl restart containerd
+```
+
+- On each worker node:
+```bash[language=bash]
+sudo kubeadm reset -f
+sudo rm -rf /etc/cni/net.d /var/lib/cni/ /var/lib/kubelet/* /etc/kubernetes/
+sudo ip link delete cni0
+sudo ip link delete flannel.1
+sudo systemctl restart containerd
+```
+## Contact
+- Yasser BRAHMI, abdenour-yasser.brahmi@telecom-sudparis.eu
