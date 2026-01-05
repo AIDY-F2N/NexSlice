@@ -7,7 +7,19 @@
 ## Citation
 This work has been accepted as a demo paper at The 27th International Conference on Modeling, Analysis and Simulation of Wireless and Mobile Systems (MSWiM 2025), Barcelona, Spain, October 27th – 31st, 2025
 
-If you use NexSlice in your research or experiments, please cite our paper once it is published in IEEE (The official DOI and link will be added here upon publication).
+If you use NexSlice in your research or experiments, please cite our paper: 
+```bibtex
+@INPROCEEDINGS{11308976,
+  author={Brahmi, Abdenour Yasser and Aba, Massinissa Ait and Bouasker, Hadil and Jouaber, Badii and Castel-Taleb, Hind},
+  booktitle={2025 International Conference on Modeling, Analysis and Simulation of Wireless and Mobile Systems (MSWiM)}, 
+  title={NexSlice: Towards an Open and Reproducible Network Slicing Testbed for 5G and Beyond}, 
+  year={2025},
+  volume={},
+  number={},
+  pages={811-814},
+  keywords={Wireless communication;6G mobile communication;Analytical models;Adaptation models;Adaptive systems;5G mobile communication;Network slicing;Quality of service;Real-time systems;Radio access networks;5G;Network Slicing;Kubernetes;OAI;UER-ANSIM},
+  doi={10.1109/MSWiM67937.2025.11308976}}
+```
 
 ## Overview
 
