@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: video-server
+  namespace: nexslice
+  labels:
+    app: video-server
+spec:
+  containers:
+    - name: nginx-streamer
+      image: nginx:alpine
+      ports:
+        - containerPort: 80

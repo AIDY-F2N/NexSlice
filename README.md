@@ -51,13 +51,19 @@ Slicing is implemented by mapping UEs to unique **S-NSSAI** identifiers (SST, SD
 
 ## Table of Contents
 
-- [Build a K8s cluster](#build-a-k8s-cluster)
+- [Build a K8S cluster](#build-a-k8s-cluster)
 - [Tools Setup](#tools-setup)
 - [OAI 5G SA Core Deployment](#oai-5g-sa-core-deployment)
-- [5G RANs Deployments](#ueransim)
-- [Monitoring](#setup-prometheus-monitoring)
-- [Tests](#generate-traffic-using-iperf3)
+- [Radio Access Networks (RANs)](#radio-access-networks-rans)
+  - [OAI Disaggregated 5G RAN](#oai-disaggregated-5g-ran)
+  - [UERANSIM Deployment](#ueransim-deployment)
+  - [SST-Based Slicing](#sst-based-slicing)
+- [eMBB Video Traffic Validation (Enhanced Mobile Broadband)](#embb-video-traffic-validation-enhanced-mobile-broadband)
+- [Monitoring with Grafana and Prometheus](#monitoring-with-grafana-and-prometheus)
+- [Pod Command Reference](#pod-command-reference)
+- [Advanced Tests: Scaling UEs and Measuring Throughput](#advanced-tests-scaling-ues-and-measuring-throughput)
 - [Clean the cluster](#clean-the-cluster)
+- [Contact](#contact)
 
 # Build a K8S cluster
 We assume that a Kubernetes cluster is already running using this repository: https://github.com/AIDY-F2N/k8s-cluster-setup-ubuntu24.git
@@ -227,6 +233,158 @@ UEs connect to different slices based on their selected SSTs, each receiving an 
     <img src="fig/sst-slicing.png" alt="OAI-RAN">
 </div>
 
+
+# eMBB Video Traffic Validation (Enhanced Mobile Broadband)
+
+This section evaluates the capability of the eMBB slice to support high-bandwidth application traffic by simulating a real-world HD/4K video streaming scenario. Real video playback is performed using VLC, while ensuring that all traffic explicitly traverses the 5G user plane through the `uesimtun0` interface.
+
+The experiment validates:
+
+* Sustained high-throughput delivery
+* QoS enforcement via rate limitation
+* UPF traffic monitoring using Grafana
+
+---
+
+## Architecture Overview
+
+### Content Server (CP)
+
+A Kubernetes pod running **NGINX** hosts the video file (`movie.mp4`).
+
+* Namespace: `nexslice`
+* Protocol: HTTP progressive download
+* File size: real HD video ~600 MB
+
+The server is deployed using:
+
+```bash
+kubectl apply -f Serveur_Video.yaml
+```
+
+Due to GitHub file size limitations (100 MB per file), the test video used for eMBB validation is not included in this repository.
+
+To reproduce the experiment, please download the sample video from Pexels:
+
+🔗 [https://www.pexels.com/video/aerial-view-of-melbourne-s-scenic-skyline-30381543/](https://www.pexels.com/video/aerial-view-of-melbourne-s-scenic-skyline-30381543/)
+
+### Steps
+
+1. Download the video from the link above.
+2. Rename the file to:
+
+```
+test_video.mp4
+```
+
+3. Place it in the root directory of the project.
+4. Copy it into the Kubernetes video server pod:
+
+```bash
+kubectl cp test_video.mp4 nexslice/video-server:/usr/share/nginx/html/movie.mp4
+```
+
+---
+
+### User Equipment (UE)
+
+The UE is emulated using **UERANSIM**.
+
+Traffic is explicitly forced through the 5G tunnel:
+
+```
+uesimtun0
+```
+
+This guarantees that all video traffic:
+
+* Traverses the UPF
+* Is visible in Grafana monitoring
+* Is subject to slice QoS policies
+
+---
+
+# Scenario A — Regulated Streaming Flow (QoS Enforcement)
+
+In this scenario, the application throughput is intentionally limited to simulate QoS enforcement.
+
+### Target Rate
+
+```
+2 MB/s ≈ 16 Mbps (`2M` in curl = 2 Megabytes/s, not Megabits)
+```
+---
+
+### Execute from the UE
+The following command enforces an application-layer throughput limit of 2 MB/s (≈ 16 Mbps) while ensuring that traffic is routed through the 5G interface (`uesimtun0`).
+Replace `<ueransim-ue1-pod-name>` and `<video-server-ip>` accordingly:
+
+```bash
+kubectl exec -it -n nexslice <ueransim-ue1-pod-name> -- \
+curl --interface uesimtun0 http://<video-server-ip>/movie.mp4 \
+-o /dev/null --limit-rate 2M
+```
+
+<div align="center">
+    <img src="fig/eMBB.png" alt="eMBB">
+</div>
+
+
+(Optional) To validate the streaming behaviour with actual media playback, VLC can be used on the host machine (Ensure that VLC is installed on the system executing the command):
+
+```bash
+kubectl exec -n nexslice <ueransim-ue1-pod-name> -- \
+curl --interface uesimtun0 --limit-rate 2M -s \
+http://<video-server-ip>/movie.mp4 | vlc -
+```
+
+
+
+
+### Observations
+
+* **UE Side:** Stable throughput (~2048 kB/s).
+* **Grafana:** Clear increase in UPF traffic.
+
+<div align="center">
+    <img src="fig/eMBB_grafana.png" alt="eMBB_grafana">
+</div>
+---
+
+# Scenario B — Maximum Capacity Test (No Rate Limiting)
+
+The rate limitation is removed to evaluate maximum slice throughput.
+
+### Execute from the UE
+
+```bash
+kubectl exec -it -n nexslice <ueransim-ue1-pod-name> -- \
+curl --interface uesimtun0 http://<video-server-ip>/movie.mp4 \
+-o /dev/null
+```
+<div align="center">
+    <img src="fig/eMBB2.png" alt="eMBB2">
+</div>
+
+(Optional) To validate the streaming behaviour with actual media playback, VLC can be used on the host machine (Ensure that VLC is installed on the system executing the command):
+
+```bash
+kubectl exec -n nexslice <ueransim-ue1-pod-name> -- \
+curl --interface uesimtun0 -s \
+http://<video-server-ip>/movie.mp4 | vlc -
+```
+
+
+### Observations
+
+* **UE Download Speed:** ~11.9 MB/s (~100 Mbps)
+* **Grafana UPF Peak:** ~11.5 MB/s
+* Significant traffic spike observed on the UPF.
+
+<div align="center">
+    <img src="fig/eMBB_grafana2.png" alt="eMBB_grafana2">
+</div>
+
 # Monitoring with Grafana and Prometheus
 To enable observability of the system, NexSlice integrates Prometheus for metrics collection and Grafana for real-time visualization of the cluster, network slices, and VNF behavior.
 
@@ -260,6 +418,13 @@ Password: prom-operator
 </div>
 
 Go to Dashboards and click on it — you’ll find multiple dashboards covering the entire cluster, nodes, pods, etc. When selecting a dashboard, make sure to choose the correct namespace if applicable (not default — use NexSlice instead), and then select the pod whose resources you want to monitor.
+
+
+# Pod Command Reference
+
+For debugging, inspection and operational verification, a set of useful commands for interacting with the different deployment pods is documented separately. See the full pod command guide here:  
+**[Pod Commands Guide](docs/pod-commands.md)**
+
 
 # Advanced Tests: Scaling UEs and Measuring Throughput
 NexSlice enables large-scale experimentation with slicing and traffic generation using UERANSIM. Below we describe how to deploy and test 100 simultaneous UEs.
